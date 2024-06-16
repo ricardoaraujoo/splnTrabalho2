@@ -41,4 +41,6 @@ def query_by_ids(db_path, document_ids):
                     resultados.append(result)
                     break
 
-    return resultados
+    if text_result:
+        return resultados, text_result[0], True
+    return resultados, resultados[0], False

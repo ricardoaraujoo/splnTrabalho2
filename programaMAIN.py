@@ -6,6 +6,7 @@ from gensim.models import TfidfModel
 from gensim.corpora import Dictionary
 from gensim.similarities import SparseMatrixSimilarity
 from fetchBD import query_by_ids
+from transformers import pipeline
 
 #DATA BASE PATH
 db_path = 'dataset/database111_DRE.sqlite'
@@ -86,13 +87,73 @@ def processa_query():
             print("Invalid choice. Please enter a number.")
 
 
+# Function to perform Question Answering with a specified model
+def run_qa_pipeline(model_identifier, text_context, query):
+    question_answering_pipeline = pipeline('question-answering', model=model_identifier, from_pt=True)
+    answer_result = question_answering_pipeline(question=query, context=text_context)
+    return answer_result['answer']
+
+# Function to test various models on a set of questions
+def test_model_performance(text_context, query_list):
+    models_list = [
+        "neuralmind/bert-large-portuguese-cased",
+        "pierreguillou/bert-large-cased-squad-v1.1-portuguese"
+    ]
+
+    performance_results = {}
+    for each_model in models_list:
+        model_answers = [run_qa_pipeline(each_model, text_context, single_query) for single_query in query_list]
+        performance_results[each_model] = model_answers
+
+    return performance_results
 
 
+def get_user_questions():
+    questions = []
+    print("Enter your questions (type 'exit' to finish):")
+    while True:
+        user_input = input()
+        if user_input.lower() == "exit":
+            break
+        questions.append(user_input)
+    return questions
 
+def qa_logic(result):
 
+    print("Performing Question Answering on the document...")
+    print("Please select one of the options below:")
+    print("1. Use the default questions")
+    print("2. Enter your own questions")
+    choiceQA = input("Enter your choice: ")
+    questions = []
+    if choiceQA == '1':
 
+        questions = [
+            "Qual é o tema do documento?",
+            "Quem emitiu o documento?",
+            "Qual é a data do documento?",
+            "Que locais são referidos no documento?",
+            "Qual é o tipo do documento?"
+        ]
+    elif choiceQA == '2':
+        questions = get_user_questions()
+    else:
+        print("Invalid choice. Using default questions.")
+        questions = [
+            "Qual é o tema do documento?",
+            "Quem emitiu o documento?",
+            "Qual é a data do documento?",
+            "Que locais são referidos no documento?",
+            "Qual é o tipo do documento?"
+        ]
 
+    model_performance_results = test_model_performance(result, questions)
 
+    # Display the comparison results
+    for each_model, answers in model_performance_results.items():
+        print(f"Performance for {each_model}:")
+        for each_question, each_answer in zip(questions, answers):
+            print(f"Question: {each_question}\nAnswer: {each_answer}\n")
 
 
 def main():
@@ -106,12 +167,29 @@ def main():
             ids = processa_query()
             print("Querying the database...")
             print(ids)
-            results  = query_by_ids(db_path, ids)
+            results, resultadosTEXTO,flag  = query_by_ids(db_path, ids)
             print_resuls_table(results)
-            
+            stringQA = ""
+            if flag: #text table
+                data = resultadosTEXTO[2]
+                info = resultadosTEXTO[4]
+                stringQA = f"O documento foi emitido na data {data} e contém as seguintes informações: {info}"
+
+                print("Document inteiro não encontrado, vamos executar com um resumo do documento")
+            else: #table normal
+                tipo_Doc = resultadosTEXTO[2]
+                emitiou = resultadosTEXTO[4]
+                fonte = resultadosTEXTO[5]
+                data = resultadosTEXTO[9]
+                info2 = resultadosTEXTO[10]
+                stringQA = f"O documento é do tipo {tipo_Doc}, foi emitido por {emitiou}, na data {data} e contém as seguintes informações: {info2}. Fonte: {fonte}"
+
+            qa_logic(stringQA)
+
         elif choice == '2':
             print("Exiting...")
             break
+
         else:
             print("Invalid choice. Please enter 1 or 2.")
 
