@@ -5,6 +5,11 @@ import nltk
 from gensim.models import TfidfModel
 from gensim.corpora import Dictionary
 from gensim.similarities import SparseMatrixSimilarity
+from fetchBD import query_by_ids
+
+#DATA BASE PATH
+db_path = 'dataset/database111_DRE.sqlite'
+
 
 # Ensure you have the NLTK Portuguese stopwords
 nltk.download('stopwords')
@@ -53,6 +58,43 @@ def search(query, top_n=10):
         results.append((data[idx], sim))
     return results
 
+
+def print_resuls_table(normalTable):
+
+    if normalTable:
+        print("Documents ordered by similarity:")
+        for entrada in normalTable:
+            print("---------------------------------------------")
+            print(f"\nResult::\n {entrada}\n")
+    else:
+        print("No details found for ID")
+
+
+def processa_query():
+    print("Choose the number of documents you wish to see")
+    while True:
+        choiceNumberDocs = input("Enter your choice: ")
+        if choiceNumberDocs.isdigit():  # Checks if the input is all digits
+            choiceNumberDocs = int(choiceNumberDocs)  # Converts to integer
+            query = input("Enter your query: ")
+            results = search(query,choiceNumberDocs)
+            ids = []
+            for result in results:
+                ids.append(result[0]['id'])
+            return ids
+        else:
+            print("Invalid choice. Please enter a number.")
+
+
+
+
+
+
+
+
+
+
+
 def main():
     while True:
         print("\nMenu:")
@@ -61,15 +103,12 @@ def main():
         choice = input("Enter your choice: ")
         
         if choice == '1':
-            query = input("Enter your query: ")
-            results = search(query)
-            for result in results:
-                print("----------------------------------------------------------------------\nResult:")
-                print(f"Similarity: {result[1]}")
-                print(f"Document ID: {result[0]['id']}")
-                print(f"Date: {result[0]['date']}")
-                print(f"Notes: {result[0]['notes']}")
-                print("\n")
+            ids = processa_query()
+            print("Querying the database...")
+            print(ids)
+            results  = query_by_ids(db_path, ids)
+            print_resuls_table(results)
+            
         elif choice == '2':
             print("Exiting...")
             break
