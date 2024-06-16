@@ -6,7 +6,7 @@ from gensim.models import TfidfModel
 from gensim.corpora import Dictionary
 from gensim.similarities import SparseMatrixSimilarity
 from fetchBD import query_by_ids
-from transformers import pipeline
+from transformers import pipeline, BertModel, BertTokenizer
 
 #DATA BASE PATH
 db_path = 'dataset/database111_DRE.sqlite'
@@ -89,14 +89,14 @@ def processa_query():
 
 # Function to perform Question Answering with a specified model
 def run_qa_pipeline(model_identifier, text_context, query):
-    question_answering_pipeline = pipeline('question-answering', model=model_identifier, from_pt=True)
+    question_answering_pipeline = pipeline('question-answering', model=model_identifier)
     answer_result = question_answering_pipeline(question=query, context=text_context)
     return answer_result['answer']
 
 # Function to test various models on a set of questions
 def test_model_performance(text_context, query_list):
     models_list = [
-        "neuralmind/bert-large-portuguese-cased",
+        "lfcc/bert-portuguese-squad",
         "pierreguillou/bert-large-cased-squad-v1.1-portuguese"
     ]
 
@@ -175,8 +175,8 @@ def main():
                 info = resultadosTEXTO[4]
                 stringQA = f"O documento foi emitido na data {data} e contém as seguintes informações: {info}"
 
-                print("Document inteiro não encontrado, vamos executar com um resumo do documento")
             else: #table normal
+                print("Document inteiro não encontrado, vamos executar com um resumo do documento")
                 tipo_Doc = resultadosTEXTO[2]
                 emitiou = resultadosTEXTO[4]
                 fonte = resultadosTEXTO[5]
